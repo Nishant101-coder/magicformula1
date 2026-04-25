@@ -2,127 +2,143 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>QUANT_NODE // STABLE_BUILD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUANT_NODE // REAL_DATA_v3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;800&display=swap');
-        body { background: #010409; color: #8b949e; font-family: 'JetBrains Mono', monospace; }
-        .terminal-panel { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; }
-        .loading-bar { height: 2px; background: #238636; transition: width 0.5s ease; }
-        .error-glow { color: #f85149; text-shadow: 0 0 5px rgba(248, 81, 73, 0.2); }
+        body { background: #010409; color: #c9d1d9; font-family: 'JetBrains Mono', monospace; }
+        .panel { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; }
+        .progress-fill { height: 100%; background: #238636; transition: width 0.5s ease; box-shadow: 0 0 10px rgba(35, 134, 54, 0.4); }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4 md:p-12">
 
-    <div class="max-w-5xl mx-auto">
-        <header class="flex justify-between items-center mb-8 border-b border-gray-800 pb-6">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-end mb-8 border-b border-[#30363d] pb-6">
             <div>
-                <h1 class="text-white text-xl font-bold tracking-tighter uppercase">Magic_Formula_Terminal</h1>
-                <p class="text-[9px] text-slate-500 mt-1 uppercase tracking-widest">Protocol: <span class="text-green-500">GENTLE_HANDSHAKE_v2.7</span></p>
+                <h1 class="text-white text-2xl font-bold tracking-tighter uppercase">Quant_Engine <span class="text-blue-500 italic">Pro</span></h1>
+                <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">Data_Node: <span class="text-green-500 font-bold">Twelve_Data_Live</span></p>
             </div>
-            <button onclick="runQuant()" id="btn" class="bg-white hover:bg-blue-500 hover:text-white text-black px-8 py-3 rounded text-[10px] font-black transition-all uppercase tracking-widest active:scale-95">Execute_Scan</button>
+            <button onclick="executeFetch()" id="runBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded font-black text-xs transition-all active:scale-95 shadow-lg shadow-blue-500/20">
+                EXECUTE_REAL_SCAN
+            </button>
         </header>
 
-        <div id="status-bar" class="text-[9px] mb-4 text-slate-400 font-bold italic">
-            > SYSTEM_READY: AWAITING_COMMAND
+        <div class="mb-6">
+            <div class="flex justify-between text-[10px] uppercase font-bold mb-2">
+                <span id="status" class="text-blue-400 font-italic">> Awaiting Handshake...</span>
+                <span id="percent" class="text-slate-500">0%</span>
+            </div>
+            <div class="w-full bg-[#161b22] h-1 rounded-full overflow-hidden">
+                <div id="progress-bar" class="progress-fill w-0"></div>
+            </div>
         </div>
 
-        <div class="w-full bg-[#161b22] h-[1px] mb-8">
-            <div id="progress" class="loading-bar w-0"></div>
-        </div>
-
-        <div class="terminal-panel overflow-hidden shadow-2xl">
+        <div class="panel overflow-hidden shadow-2xl">
             <table class="w-full text-left text-[11px]">
                 <thead class="bg-[#161b22] text-slate-400 border-b border-[#30363d] uppercase font-bold">
                     <tr>
                         <th class="p-4">Rank</th>
                         <th class="p-4">Ticker</th>
-                        <th class="p-4">Earnings Yield (%)</th>
+                        <th class="p-4">E_Yield (%)</th>
                         <th class="p-4">ROIC (%)</th>
                         <th class="p-4 text-right">M_Score</th>
                     </tr>
                 </thead>
-                <tbody id="results-grid" class="divide-y divide-[#30363d]">
-                    <tr><td colspan="5" class="p-24 text-center text-slate-600 italic uppercase">Click Execute_Scan to begin.</td></tr>
+                <tbody id="output" class="divide-y divide-[#30363d]">
+                    <tr><td colspan="5" class="p-20 text-center text-slate-600 italic">REAL DATA MODE: No simulations active. Click Execute to begin.</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
 <script>
-    const API_KEY = "yRjKLFwT3t9TfSXqDPunx2maCHwjOfQh";
-    // Reduced to 6 companies for the first test to ensure we don't hit the limit
-    const TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META"];
+    const API_KEY = "4be8038df64e4e34abef0cda10e59327";
+    // Using a tight set of major tickers for maximum reliability
+    const TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "NFLX"];
 
-    async function runQuant() {
-        const btn = document.getElementById('btn');
-        const grid = document.getElementById('results-grid');
-        const status = document.getElementById('status-bar');
-        const bar = document.getElementById('progress');
-
-        btn.disabled = true;
-        btn.innerText = "QUERYING...";
-        grid.innerHTML = "";
+    async function executeFetch() {
+        const btn = document.getElementById('runBtn');
+        const output = document.getElementById('output');
+        const status = document.getElementById('status');
+        const bar = document.getElementById('progress-bar');
+        const percentText = document.getElementById('percent');
         
-        let stocks = [];
+        btn.disabled = true;
+        btn.innerText = "SCANNING...";
+        output.innerHTML = "";
+        
+        let masterData = [];
 
         for (let i = 0; i < TICKERS.length; i++) {
             const symbol = TICKERS[i];
-            status.innerText = `> SECURE_FETCH: ${symbol} (${i + 1}/${TICKERS.length})...`;
-            bar.style.width = `${((i + 1) / TICKERS.length) * 100}%`;
-
+            const progress = Math.round(((i + 1) / TICKERS.length) * 100);
+            
+            status.innerText = `> DOWNLOADING FUNDAMENTALS: ${symbol}...`;
+            bar.style.width = `${progress}%`;
+            percentText.innerText = `${progress}%`;
+            
             try {
-                const url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${API_KEY}`;
-                const response = await fetch(url);
-                
-                // If the API says "Too Many Requests" (429), we stop and tell the user
-                if (response.status === 429) {
-                    throw new Error("API_LIMIT_REACHED (429). Wait 60 seconds.");
+                // Fetching Quote for P/E calculation
+                const quoteUrl = `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${API_KEY}`;
+                const quoteResp = await fetch(quoteUrl);
+                const quoteData = await quoteResp.json();
+
+                // Fetching Statistics for ROIC
+                const statUrl = `https://api.twelvedata.com/statistics?symbol=${symbol}&apikey=${API_KEY}`;
+                const statResp = await fetch(statUrl);
+                const statData = await statResp.json();
+
+                if (quoteData.status === "error" || statData.status === "error") {
+                    throw new Error(quoteData.message || statData.message);
                 }
 
-                const data = await response.json();
+                // MAGIC FORMULA CALCULATION (REAL DATA)
+                const pe = parseFloat(quoteData.trailing_pe || quoteData.pe);
+                const earningsYield = pe ? (100 / pe) : 0;
+                const roic = parseFloat(statData.statistics?.profitability?.return_on_invested_capital || 0);
 
-                if (data && data[0]) {
-                    stocks.push({
-                        symbol: symbol,
-                        yield: (data[0].earningsYieldTTM * 100).toFixed(2),
-                        roic: (data[0].roicTTM * 100).toFixed(2),
-                        rawYield: data[0].earningsYieldTTM,
-                        rawRoic: data[0].roicTTM
-                    });
-                    status.innerHTML = `<span class="text-green-500">> DATA_RECEIVED: ${symbol}</span>`;
+                if (earningsYield > 0) {
+                    masterData.push({ symbol, earningsYield, roic });
+                    status.innerHTML = `<span class="text-green-500">> DATA_LOCKED: ${symbol}</span>`;
                 }
-            } catch (e) {
-                status.innerHTML = `<span class="error-glow">> FAILED: ${symbol} | REASON: ${e.message}</span>`;
+
+            } catch (err) {
+                status.innerHTML = `<span class="text-red-500">> ERROR_${symbol}: ${err.message}</span>`;
+                console.error(err);
             }
             
-            // THE "GENTLE" PART: We wait 1.5 seconds between each call
-            await new Promise(r => setTimeout(r, 1500));
+            // CRITICAL: Twelve Data Free Tier limit is 8 requests/min.
+            // We wait 10 seconds between tickers to avoid being blocked.
+            if (i < TICKERS.length - 1) {
+                await new Promise(r => setTimeout(r, 10000));
+            }
         }
 
-        // Final Sort & Render
-        stocks.sort((a, b) => b.rawYield - a.rawYield).forEach((s, i) => s.yRank = i + 1);
-        stocks.sort((a, b) => b.rawRoic - a.rawRoic).forEach((s, i) => s.rRank = i + 1);
-        stocks.forEach(s => s.score = s.yRank + s.rRank);
-        stocks.sort((a, b) => a.score - b.score);
+        // Final Ranking Logic (True Quant Model)
+        masterData.sort((a, b) => b.earningsYield - a.earningsYield).forEach((s, i) => s.yRank = i + 1);
+        masterData.sort((a, b) => b.roic - a.roic).forEach((s, i) => s.rRank = i + 1);
+        masterData.forEach(s => s.score = s.yRank + s.rRank);
+        masterData.sort((a, b) => a.score - b.score);
 
-        if (stocks.length === 0) {
-            grid.innerHTML = `<tr><td colspan="5" class="p-20 text-center error-glow font-bold uppercase">Critical Data Block. Use F12 to check Network Console.</td></tr>`;
+        if (masterData.length === 0) {
+            output.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-red-500 font-bold uppercase tracking-widest">Critical Error: Connection Refused. Verify API Key and Tier limits.</td></tr>`;
         } else {
-            grid.innerHTML = stocks.map((s, i) => `
-                <tr class="hover:bg-blue-500/5">
+            output.innerHTML = masterData.map((s, i) => `
+                <tr class="hover:bg-blue-500/5 transition-all">
                     <td class="p-4 font-bold text-blue-500 italic">#${(i+1).toString().padStart(2, '0')}</td>
                     <td class="p-4 text-white font-bold tracking-widest">${s.symbol}</td>
-                    <td class="p-4 text-green-400 font-bold">${s.yield}%</td>
-                    <td class="p-4 text-purple-400 font-bold">${s.roic}%</td>
+                    <td class="p-4 text-green-400 font-bold">${s.earningsYield.toFixed(2)}%</td>
+                    <td class="p-4 text-purple-400 font-bold">${s.roic.toFixed(2)}%</td>
                     <td class="p-4 text-right text-white font-black">${s.score}</td>
                 </tr>
             `).join('');
         }
 
-        status.innerText = "> SCAN_COMPLETE.";
         btn.disabled = false;
-        btn.innerText = "Execute_Scan";
+        btn.innerText = "EXECUTE_REAL_SCAN";
+        status.innerText = "> SCAN_COMPLETE. DATA SOURCE: TWELVE DATA API.";
     }
 </script>
 </body>

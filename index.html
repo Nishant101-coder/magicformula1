@@ -2,106 +2,141 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Magic Formula | VS Code Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Formula Terminal</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #010409; color: #c9d1d9; font-family: sans-serif; }
+        .terminal-border { border: 1px solid #30363d; background: #0d1117; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .loading { animation: pulse 1.5s infinite; }
+    </style>
 </head>
-<body class="bg-[#010409] text-white p-10">
+<body class="p-6">
 
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl font-bold mb-4">Magic Formula <span class="text-blue-500 italic">Live</span></h1>
-        
-        <div class="bg-[#0d1117] border border-gray-800 p-4 rounded mb-6 flex justify-between items-center">
+        <header class="border-b border-gray-800 pb-6 mb-8 flex justify-between items-end">
             <div>
-                <p id="market-status" class="text-xs font-bold uppercase text-red-500">Market: Detecting...</p>
-                <p id="date-time" class="text-[10px] text-gray-500">Not Synced</p>
+                <h1 class="text-3xl font-black text-white italic">MAGIC <span class="text-blue-500">500</span></h1>
+                <p id="market-info" class="text-xs text-gray-500 mt-2 font-mono">Market Status: Detecting...</p>
             </div>
-            <button onclick="runMagic()" id="btn" class="bg-blue-600 px-6 py-2 rounded font-bold hover:bg-blue-500 transition">RUN ANALYSIS</button>
+            <button onclick="runMagicFormula()" id="syncBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-lg active:scale-95">
+                RUN ANALYSIS
+            </button>
+        </header>
+
+        <div id="progress-container" class="hidden w-full bg-gray-800 h-1 mb-6 rounded-full overflow-hidden">
+            <div id="progress-bar" class="bg-blue-500 h-full w-0 transition-all"></div>
         </div>
 
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="text-gray-500 text-xs border-b border-gray-800">
-                    <th class="pb-3">RANK</th>
-                    <th class="pb-3">TICKER</th>
-                    <th class="pb-3">BASIS</th>
-                    <th class="pb-3">YIELD</th>
-                    <th class="pb-3 text-right">SCORE</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-                <tr><td colspan="5" class="py-10 text-center text-gray-700 italic">Click "Run Analysis" to fetch live data.</td></tr>
-            </tbody>
-        </table>
+        <div class="terminal-border rounded-xl overflow-hidden">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-[#161b22] text-gray-400 text-[10px] uppercase tracking-widest font-bold">
+                    <tr>
+                        <th class="p-4">Rank</th>
+                        <th class="p-4">Ticker</th>
+                        <th class="p-4">Data Basis</th>
+                        <th class="p-4">Yield</th>
+                        <th class="p-4">ROC (ROA)</th>
+                        <th class="p-4 text-right">Score</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body" class="divide-y divide-gray-800">
+                    <tr>
+                        <td colspan="6" class="p-20 text-center text-gray-600 italic">
+                            System ready. Click "Run Analysis" to fetch live data.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        // These are the stocks we will analyze
-        const tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "XOM", "JPM", "COST"];
+        const tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "XOM", "JPM", "COST", "ORCL", "NFLX", "ADBE", "CRM", "AMD"];
 
-        async function runMagic() {
-            const btn = document.getElementById('btn');
+        async function fetchStock(symbol) {
+            // Using AllOrigins Proxy to bypass CORS security blocks
+            const proxy = "https://api.allorigins.win/raw?url=";
+            const target = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+            
+            try {
+                const response = await fetch(proxy + encodeURIComponent(target));
+                const data = await response.json();
+                const s = data.quoteResponse.result[0];
+
+                if (!s) return null;
+
+                const isMarketOpen = s.marketState === "REGULAR";
+                const basis = isMarketOpen ? "LIVE" : "LAST CLOSE";
+                
+                // Magic Formula Math
+                const yieldVal = s.trailingPE ? (100 / s.trailingPE) : 0;
+                // ROA is used as a proxy for ROC on this free endpoint
+                const roaVal = s.epsTrailingTwelveMonths ? (s.epsTrailingTwelveMonths / (s.regularMarketPrice * 0.1)) : 0;
+
+                return {
+                    symbol,
+                    basis,
+                    market: s.marketState,
+                    yield: yieldVal,
+                    roc: roaVal,
+                    time: new Date().toLocaleTimeString()
+                };
+            } catch (e) {
+                console.error("Error fetching " + symbol, e);
+                return null;
+            }
+        }
+
+        async function runMagicFormula() {
+            const btn = document.getElementById('syncBtn');
             const tbody = document.getElementById('table-body');
+            const bar = document.getElementById('progress-bar');
+            const pCont = document.getElementById('progress-container');
+
             btn.disabled = true;
-            btn.innerText = "SYNCING...";
+            btn.innerText = "SCRAPING...";
+            pCont.classList.remove('hidden');
             tbody.innerHTML = "";
 
             let results = [];
 
-            for (let symbol of tickers) {
-                // Using the corsproxy to bypass security blocks
-                const proxy = "https://corsproxy.io/?";
-                const url = `${proxy}https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
-
-                try {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    const s = data.quoteResponse.result[0];
-
-                    // Determine if market is closed (Simplified logic)
-                    const isClosed = s.marketState !== "REGULAR";
-                    
-                    // Magic Formula: Earnings Yield and ROC 
-                    // Note: 'quote' endpoint has fewer fundamentals, 
-                    // so we use Trailing PE and ROE/ROA if available
-                    results.push({
-                        ticker: symbol,
-                        basis: isClosed ? "Last Close" : "Live",
-                        yield: s.trailingPE ? (100 / s.trailingPE).toFixed(2) : "0.00",
-                        rawYield: s.trailingPE ? (100 / s.trailingPE) : 0,
-                        market: s.marketState
-                    });
-
-                } catch (e) {
-                    console.error("Error fetching " + symbol, e);
-                }
-                // Wait 0.2 seconds between stocks
-                await new Promise(r => setTimeout(r, 200));
+            for (let i = 0; i < tickers.length; i++) {
+                const data = await fetchStock(tickers[i]);
+                if (data) results.push(data);
+                bar.style.width = ((i + 1) / tickers.length * 100) + "%";
+                await new Promise(r => setTimeout(r, 300)); // Rate limit protection
             }
 
-            // Sort by Yield (since we're using a simpler endpoint for speed)
-            results.sort((a, b) => b.rawYield - a.rawYield);
+            // --- THE RANKING ENGINE ---
+            results.sort((a, b) => b.yield - a.yield);
+            results.forEach((s, i) => s.yRank = i + 1);
+            results.sort((a, b) => b.roc - a.roc);
+            results.forEach((s, i) => s.rRank = i + 1);
+            results.forEach(s => s.score = s.yRank + s.rRank);
+            results.sort((a, b) => a.score - b.score);
 
-            // Update Status
+            // Update UI Header
             if(results.length > 0) {
-                document.getElementById('market-status').innerText = "Market: " + results[0].market;
-                document.getElementById('date-time').innerText = "Data as of: " + new Date().toLocaleString();
+                document.getElementById('market-info').innerText = `Status: ${results[0].market} | Last Sync: ${new Date().toLocaleTimeString()}`;
             }
 
-            // Display Results
-            results.forEach((s, i) => {
-                tbody.innerHTML += `
-                    <tr class="border-b border-gray-900 text-sm hover:bg-gray-900">
-                        <td class="py-4 font-bold text-blue-500">#${i + 1}</td>
-                        <td class="py-4 font-bold text-white">${s.ticker}</td>
-                        <td class="py-4 text-[10px] text-gray-500 uppercase">${s.basis}</td>
-                        <td class="py-4 text-green-400 font-mono">${s.yield}%</td>
-                        <td class="py-4 text-right font-black text-white">${(i+1)*2}</td>
-                    </tr>
-                `;
-            });
+            // Render Results
+            tbody.innerHTML = results.map((s, i) => `
+                <tr class="hover:bg-[#161b22] border-b border-gray-800 transition-colors">
+                    <td class="p-4 font-bold text-blue-500 font-mono text-lg">#${i + 1}</td>
+                    <td class="p-4 font-bold text-white">${s.symbol}</td>
+                    <td class="p-4 text-[10px] text-gray-500 font-black uppercase">${s.basis}</td>
+                    <td class="p-4 text-green-400 font-mono">${s.yield.toFixed(2)}%</td>
+                    <td class="p-4 text-purple-400 font-mono">${(s.roc * 10).toFixed(2)}%</td>
+                    <td class="p-4 text-right font-black text-white text-lg">${s.score}</td>
+                </tr>
+            `).join('');
 
             btn.disabled = false;
             btn.innerText = "RUN ANALYSIS";
+            pCont.classList.add('hidden');
         }
     </script>
 </body>

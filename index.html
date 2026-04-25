@@ -2,142 +2,142 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic Formula Terminal</title>
+    <title>Magic Formula Live | GitHub Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #010409; color: #c9d1d9; font-family: sans-serif; }
-        .terminal-border { border: 1px solid #30363d; background: #0d1117; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .loading { animation: pulse 1.5s infinite; }
-    </style>
+        body { background: #010409; color: #c9d1d9; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .data-row:hover { background: rgba(56, 139, 253, 0.1); }
+        .status-pill { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .market-closed { background: #3e1c1c; color: #ff7b72; border: 1px solid #f85149; }
+        .market-open { background: #112d1a; color: #7ee787; border: 1px solid #3fb950; }
+    </script>
 </head>
-<body class="p-6">
+<body class="p-6 md:p-12">
 
     <div class="max-w-4xl mx-auto">
-        <header class="border-b border-gray-800 pb-6 mb-8 flex justify-between items-end">
+        <header class="flex justify-between items-center mb-8 border-b border-gray-800 pb-6">
             <div>
-                <h1 class="text-3xl font-black text-white italic">MAGIC <span class="text-blue-500">500</span></h1>
-                <p id="market-info" class="text-xs text-gray-500 mt-2 font-mono">Market Status: Detecting...</p>
+                <h1 class="text-2xl font-bold text-white tracking-tighter">MAGIC_FORMULA_<span class="text-blue-500">v2.0</span></h1>
+                <p id="market-status" class="text-[10px] mt-2 uppercase tracking-widest text-gray-500">Market Status: Unknown</p>
             </div>
-            <button onclick="runMagicFormula()" id="syncBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-lg active:scale-95">
+            <button onclick="runSync()" id="btn" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-md font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20">
                 RUN ANALYSIS
             </button>
         </header>
 
-        <div id="progress-container" class="hidden w-full bg-gray-800 h-1 mb-6 rounded-full overflow-hidden">
-            <div id="progress-bar" class="bg-blue-500 h-full w-0 transition-all"></div>
+        <div id="loader" class="hidden mb-6">
+            <div class="flex justify-between text-[10px] mb-1 uppercase text-blue-400 font-bold">
+                <span id="load-msg">Initializing Engine...</span>
+                <span id="load-pct">0%</span>
+            </div>
+            <div class="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+                <div id="bar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+            </div>
         </div>
 
-        <div class="terminal-border rounded-xl overflow-hidden">
+        <div class="border border-gray-800 rounded-lg overflow-hidden bg-[#0d1117]">
             <table class="w-full text-left text-sm">
-                <thead class="bg-[#161b22] text-gray-400 text-[10px] uppercase tracking-widest font-bold">
+                <thead class="bg-[#161b22] text-gray-500 text-[10px] uppercase font-black">
                     <tr>
                         <th class="p-4">Rank</th>
                         <th class="p-4">Ticker</th>
-                        <th class="p-4">Data Basis</th>
                         <th class="p-4">Yield</th>
-                        <th class="p-4">ROC (ROA)</th>
-                        <th class="p-4 text-right">Score</th>
+                        <th class="p-4">ROC</th>
+                        <th class="p-4 text-right">Magic Score</th>
                     </tr>
                 </thead>
-                <tbody id="table-body" class="divide-y divide-gray-800">
-                    <tr>
-                        <td colspan="6" class="p-20 text-center text-gray-600 italic">
-                            System ready. Click "Run Analysis" to fetch live data.
-                        </td>
-                    </tr>
+                <tbody id="results-table" class="divide-y divide-gray-800">
+                    <tr><td colspan="5" class="p-20 text-center text-gray-600 italic">Ready for input. Click Run Analysis to scrape live data.</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <script>
-        const tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "XOM", "JPM", "COST", "ORCL", "NFLX", "ADBE", "CRM", "AMD"];
+<script>
+    const tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "XOM", "JPM", "COST", "ORCL", "NFLX"];
 
-        async function fetchStock(symbol) {
-            // Using AllOrigins Proxy to bypass CORS security blocks
-            const proxy = "https://api.allorigins.win/raw?url=";
-            const target = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+    async function runSync() {
+        const btn = document.getElementById('btn');
+        const table = document.getElementById('results-table');
+        const loader = document.getElementById('loader');
+        const bar = document.getElementById('bar');
+        const msg = document.getElementById('load-msg');
+        const pct = document.getElementById('load-pct');
+
+        btn.disabled = true;
+        loader.classList.remove('hidden');
+        table.innerHTML = "";
+        
+        let masterData = [];
+
+        for (let i = 0; i < tickers.length; i++) {
+            const symbol = tickers[i];
+            msg.innerText = `SCRAPING ${symbol}...`;
+            
+            // Using AllOrigins Proxy + Cache Buster (timestamp) to bypass Yahoo blocks
+            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent('https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + symbol)}&_=${Date.now()}`;
             
             try {
-                const response = await fetch(proxy + encodeURIComponent(target));
-                const data = await response.json();
-                const s = data.quoteResponse.result[0];
+                const response = await fetch(proxy);
+                const json = await response.json();
+                const data = JSON.parse(json.contents).quoteResponse.result[0];
 
-                if (!s) return null;
+                if (data) {
+                    // Update market badge based on first ticker
+                    if (i === 0) updateMarketBadge(data.marketState);
 
-                const isMarketOpen = s.marketState === "REGULAR";
-                const basis = isMarketOpen ? "LIVE" : "LAST CLOSE";
-                
-                // Magic Formula Math
-                const yieldVal = s.trailingPE ? (100 / s.trailingPE) : 0;
-                // ROA is used as a proxy for ROC on this free endpoint
-                const roaVal = s.epsTrailingTwelveMonths ? (s.epsTrailingTwelveMonths / (s.regularMarketPrice * 0.1)) : 0;
+                    // Magic Formula Calculation
+                    const eYield = data.trailingPE ? (100 / data.trailingPE) : 0;
+                    const roc = data.bookValue ? (data.epsTrailingTwelveMonths / data.bookValue * 100) : 0;
 
-                return {
-                    symbol,
-                    basis,
-                    market: s.marketState,
-                    yield: yieldVal,
-                    roc: roaVal,
-                    time: new Date().toLocaleTimeString()
-                };
+                    masterData.push({
+                        symbol,
+                        yield: eYield,
+                        roc: roc,
+                        score: 0 
+                    });
+                }
             } catch (e) {
-                console.error("Error fetching " + symbol, e);
-                return null;
+                console.error(`Failed: ${symbol}`);
             }
+
+            const progress = Math.round(((i + 1) / tickers.length) * 100);
+            bar.style.width = progress + "%";
+            pct.innerText = progress + "%";
+            
+            // Slight delay to mimic human behavior
+            await new Promise(r => setTimeout(r, 350));
         }
 
-        async function runMagicFormula() {
-            const btn = document.getElementById('syncBtn');
-            const tbody = document.getElementById('table-body');
-            const bar = document.getElementById('progress-bar');
-            const pCont = document.getElementById('progress-container');
+        // Calculate Magic Rankings
+        masterData.sort((a, b) => b.yield - a.yield);
+        masterData.forEach((s, i) => s.yRank = i + 1);
+        masterData.sort((a, b) => b.roc - a.roc);
+        masterData.forEach((s, i) => s.rRank = i + 1);
+        masterData.forEach(s => s.finalScore = s.yRank + s.rRank);
+        masterData.sort((a, b) => a.finalScore - b.finalScore);
 
-            btn.disabled = true;
-            btn.innerText = "SCRAPING...";
-            pCont.classList.remove('hidden');
-            tbody.innerHTML = "";
+        // Render Table
+        table.innerHTML = masterData.map((s, i) => `
+            <tr class="data-row transition-colors border-b border-gray-800">
+                <td class="p-4 font-bold text-blue-500">#${i + 1}</td>
+                <td class="p-4 font-bold text-white">${s.symbol}</td>
+                <td class="p-4 text-green-400 font-bold">${s.yield.toFixed(2)}%</td>
+                <td class="p-4 text-purple-400 font-bold">${s.roc.toFixed(2)}%</td>
+                <td class="p-4 text-right font-black text-white">${s.finalScore}</td>
+            </tr>
+        `).join('');
 
-            let results = [];
+        loader.classList.add('hidden');
+        btn.disabled = false;
+    }
 
-            for (let i = 0; i < tickers.length; i++) {
-                const data = await fetchStock(tickers[i]);
-                if (data) results.push(data);
-                bar.style.width = ((i + 1) / tickers.length * 100) + "%";
-                await new Promise(r => setTimeout(r, 300)); // Rate limit protection
-            }
-
-            // --- THE RANKING ENGINE ---
-            results.sort((a, b) => b.yield - a.yield);
-            results.forEach((s, i) => s.yRank = i + 1);
-            results.sort((a, b) => b.roc - a.roc);
-            results.forEach((s, i) => s.rRank = i + 1);
-            results.forEach(s => s.score = s.yRank + s.rRank);
-            results.sort((a, b) => a.score - b.score);
-
-            // Update UI Header
-            if(results.length > 0) {
-                document.getElementById('market-info').innerText = `Status: ${results[0].market} | Last Sync: ${new Date().toLocaleTimeString()}`;
-            }
-
-            // Render Results
-            tbody.innerHTML = results.map((s, i) => `
-                <tr class="hover:bg-[#161b22] border-b border-gray-800 transition-colors">
-                    <td class="p-4 font-bold text-blue-500 font-mono text-lg">#${i + 1}</td>
-                    <td class="p-4 font-bold text-white">${s.symbol}</td>
-                    <td class="p-4 text-[10px] text-gray-500 font-black uppercase">${s.basis}</td>
-                    <td class="p-4 text-green-400 font-mono">${s.yield.toFixed(2)}%</td>
-                    <td class="p-4 text-purple-400 font-mono">${(s.roc * 10).toFixed(2)}%</td>
-                    <td class="p-4 text-right font-black text-white text-lg">${s.score}</td>
-                </tr>
-            `).join('');
-
-            btn.disabled = false;
-            btn.innerText = "RUN ANALYSIS";
-            pCont.classList.add('hidden');
-        }
-    </script>
+    function updateMarketBadge(state) {
+        const badge = document.getElementById('market-status');
+        const isOpen = state === "REGULAR";
+        badge.innerText = `Market Status: ${state} (${isOpen ? 'Live' : 'Last Close Data'})`;
+        badge.className = `text-[10px] mt-2 uppercase tracking-widest font-black ${isOpen ? 'text-green-500' : 'text-red-500'}`;
+    }
+</script>
 </body>
 </html>

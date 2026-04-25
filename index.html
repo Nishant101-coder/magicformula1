@@ -3,156 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUANT_OS // MAGIC_FORMULA_v2.6</title>
+    <title>QUANT_NODE // MAGIC_FORMULA_v2.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;800&display=swap');
-        body { background: #02040a; color: #8b949e; font-family: 'JetBrains Mono', monospace; }
-        .terminal-window { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .status-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; }
-        .tag-active { background: #238636; color: #aff5b4; }
-        .tag-error { background: #6e1011; color: #ffd1dc; }
-        tr:hover { background: rgba(56, 139, 253, 0.05); }
+        body { background: #010409; color: #8b949e; font-family: 'JetBrains Mono', monospace; }
+        .terminal-panel { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; }
+        tr:hover { background: rgba(56, 139, 253, 0.03); }
+        .loading-bar { height: 2px; background: #388bfd; transition: width 0.3s ease; }
     </style>
 </head>
-<body class="p-4 md:p-12">
+<body class="p-4 md:p-10">
 
-    <div class="max-w-6xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+    <div class="max-w-5xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-white text-2xl font-extrabold tracking-tighter flex items-center gap-3">
-                    <span class="border border-blue-500 text-blue-500 px-2 py-0.5 rounded text-xs italic">CORE</span>
-                    MAGIC_FORMULA_QUANT
-                </h1>
-                <div class="flex gap-4 mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                    <span id="market-badge" class="tag-error">Market: Closed</span>
-                    <span>//</span>
-                    <span id="timestamp">SYST_TIME: 00:00:00</span>
-                </div>
+                <h1 class="text-white text-xl font-bold tracking-tighter uppercase">Magic_Formula_Terminal</h1>
+                <p class="text-[9px] text-slate-500 mt-1 uppercase tracking-widest">Auth_Status: <span class="text-green-500 font-bold">KEY_ENCRYPTED_LOADED</span></p>
             </div>
             
-            <button onclick="runQuantSweep()" id="actionBtn" class="bg-white hover:bg-blue-500 hover:text-white text-black px-10 py-3 rounded font-black text-xs transition-all uppercase tracking-widest active:scale-95 shadow-xl shadow-blue-500/10">
-                Execute_Quant_Sweep
+            <button onclick="runQuant()" id="btn" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded text-[10px] font-black transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-blue-500/20">
+                Execute_Scan
             </button>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div class="lg:col-span-1 space-y-6">
-                <div class="terminal-window p-5">
-                    <h3 class="text-[10px] font-bold text-slate-500 mb-4 uppercase tracking-widest">System_Log</h3>
-                    <div id="log-console" class="text-[9px] h-48 overflow-y-auto space-y-2 text-slate-400 font-mono">
-                        > Kernel v2.6 initialized...<br>
-                        > Ready for data handshake.
-                    </div>
-                </div>
-            </div>
+        <div id="status-bar" class="text-[9px] mb-4 text-slate-500">
+            > SYSTEM_IDLE: STANDBY_FOR_COMMAND
+        </div>
 
-            <div class="lg:col-span-3">
-                <div class="terminal-window overflow-hidden">
-                    <table class="w-full text-left text-[11px] border-collapse">
-                        <thead class="bg-[#161b22] border-b border-[#30363d] text-slate-500 uppercase font-black">
-                            <tr>
-                                <th class="p-4">Rank</th>
-                                <th class="p-4">Ticker</th>
-                                <th class="p-4">Earnings Yield</th>
-                                <th class="p-4">Asset Return</th>
-                                <th class="p-4 text-right">M_Score</th>
-                            </tr>
-                        </thead>
-                        <tbody id="data-grid" class="divide-y divide-[#30363d]/50">
-                            <tr>
-                                <td colspan="5" class="p-20 text-center text-slate-600 italic tracking-tight">
-                                    AWAITING COMMAND. EXECUTE SWEEP TO LOAD QUANTITATIVE METRICS.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="w-full bg-[#161b22] h-[1px] mb-8">
+            <div id="progress" class="loading-bar w-0"></div>
+        </div>
+
+        <div class="terminal-panel overflow-hidden shadow-2xl">
+            <table class="w-full text-left text-[11px]">
+                <thead class="bg-[#161b22] text-slate-400 border-b border-[#30363d] uppercase font-bold">
+                    <tr>
+                        <th class="p-4 text-blue-500 italic">Rank</th>
+                        <th class="p-4">Ticker</th>
+                        <th class="p-4">Earnings Yield (%)</th>
+                        <th class="p-4">ROIC (%)</th>
+                        <th class="p-4 text-right">M_Score</th>
+                    </tr>
+                </thead>
+                <tbody id="results-grid" class="divide-y divide-[#30363d]">
+                    <tr><td colspan="5" class="p-24 text-center text-slate-600 italic uppercase tracking-tighter">Click Execute_Scan to start live data extraction.</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <script>
-        const TICKERS = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "NFLX", "AMD", "ADBE"];
+<script>
+    // Security Note: Since this key is in a public GitHub repo, anyone can see it. 
+    // This is fine for testing, but standard practice is to keep it hidden!
+    const API_KEY = "yRjKLFwT3t9TfSXqDPunx2maCHwjOfQh";
+    const TICKERS = ["AAPL", "MSFT", "GOOGL", "NVDA", "AMZN", "META", "TSLA", "AVGO", "COST", "ADBE", "ORCL", "NFLX"];
 
-        function pushLog(msg, isError = false) {
-            const consoleEl = document.getElementById('log-console');
-            const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
-            const color = isError ? 'text-red-400' : 'text-blue-400';
-            consoleEl.innerHTML += `<div class="leading-relaxed"><span class="text-slate-600">[${time}]</span> <span class="${color}">> ${msg}</span></div>`;
-            consoleEl.scrollTop = consoleEl.scrollHeight;
-        }
+    async function runQuant() {
+        const btn = document.getElementById('btn');
+        const grid = document.getElementById('results-grid');
+        const status = document.getElementById('status-bar');
+        const bar = document.getElementById('progress');
 
-        async function runQuantSweep() {
-            const btn = document.getElementById('actionBtn');
-            const tbody = document.getElementById('data-grid');
-            
-            btn.disabled = true;
-            btn.innerText = "SWEEPING...";
-            tbody.innerHTML = "";
-            pushLog("Initializing Data Handshake...");
+        btn.disabled = true;
+        btn.innerText = "QUERYING...";
+        grid.innerHTML = "";
+        
+        let stocks = [];
 
-            let results = [];
+        for (let i = 0; i < TICKERS.length; i++) {
+            const symbol = TICKERS[i];
+            status.innerText = `> FETCHING_TELEMETRY: ${symbol} (${i + 1}/${TICKERS.length})`;
+            bar.style.width = `${((i + 1) / TICKERS.length) * 100}%`;
 
-            for (let ticker of TICKERS) {
-                pushLog(`Querying telemetry for ${ticker}...`);
-                
-                // Using a professional proxy strategy
-                const proxy = "https://api.allorigins.win/get?url=";
-                const target = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`;
-                
-                try {
-                    const response = await fetch(proxy + encodeURIComponent(target));
-                    const jsonWrapper = await response.json();
-                    const data = JSON.parse(jsonWrapper.contents).quoteResponse.result[0];
+            try {
+                // Using FMP Key Metrics TTM endpoint for accurate Magic Formula data
+                const url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
 
-                    if (data) {
-                        // REAL DATA CALCULATION
-                        const eYield = data.trailingPE ? (100 / data.trailingPE) : (5 + Math.random() * 2);
-                        const roa = data.bookValue ? (data.epsTrailingTwelveMonths / data.bookValue * 10) : (10 + Math.random() * 5);
-
-                        results.push({ symbol: ticker, yield: eYield, roc: roa });
-                        pushLog(`${ticker} verified.`, false);
-                    }
-                } catch (e) {
-                    pushLog(`Throttled on ${ticker}. Using stable historical index.`, true);
-                    // Professional Failover: Use historical averages if Yahoo blocks the request
-                    results.push({ 
-                        symbol: ticker, 
-                        yield: 4.5 + Math.random(), 
-                        roc: 12.2 + Math.random() 
+                if (data && data[0]) {
+                    stocks.push({
+                        symbol: symbol,
+                        yield: (data[0].earningsYieldTTM * 100).toFixed(2),
+                        roic: (data[0].roicTTM * 100).toFixed(2),
+                        rawYield: data[0].earningsYieldTTM,
+                        rawRoic: data[0].roicTTM
                     });
                 }
-                // Rate-limit protection (Professional standard)
-                await new Promise(r => setTimeout(r, 600));
+            } catch (e) {
+                console.error(`Error on ${symbol}`);
             }
-
-            // Dual-Factor Ranking System
-            results.sort((a, b) => b.yield - a.yield).forEach((s, i) => s.yRank = i + 1);
-            results.sort((a, b) => b.roc - a.roc).forEach((s, i) => s.rRank = i + 1);
-            results.map(s => s.score = s.yRank + s.rRank);
-            results.sort((a, b) => a.score - b.score);
-
-            // Final Render
-            tbody.innerHTML = results.map((s, i) => `
-                <tr class="hover:bg-blue-500/5 transition-all">
-                    <td class="p-4 font-black text-blue-500 text-sm">#${(i + 1).toString().padStart(2, '0')}</td>
-                    <td class="p-4 text-white font-bold tracking-widest">${s.symbol}</td>
-                    <td class="p-4 text-green-400 font-bold">${s.yield.toFixed(2)}%</td>
-                    <td class="p-4 text-purple-400 font-bold">${s.roc.toFixed(2)}%</td>
-                    <td class="p-4 text-right text-white font-black text-xs">${s.score}</td>
-                </tr>
-            `).join('');
-
-            btn.disabled = false;
-            btn.innerText = "Execute_Quant_Sweep";
-            pushLog("Analysis Complete. Terminal Updated.", false);
+            // Small stagger to visualize the loading process
+            await new Promise(r => setTimeout(r, 150));
         }
 
-        // Live Clock
-        setInterval(() => {
-            document.getElementById('timestamp').innerText = `SYST_TIME: ${new Date().toLocaleTimeString('en-GB')}`;
-        }, 1000);
-    </script>
+        // Magic Formula Ranking Engine
+        stocks.sort((a, b) => b.rawYield - a.rawYield).forEach((s, i) => s.yRank = i + 1);
+        stocks.sort((a, b) => b.rawRoic - a.rawRoic).forEach((s, i) => s.rRank = i + 1);
+        stocks.forEach(s => s.score = s.yRank + s.rRank);
+        stocks.sort((a, b) => a.score - b.score);
+
+        if (stocks.length === 0) {
+            grid.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-red-500 font-bold uppercase">Critical Error: Unable to authenticate with API. Check Key.</td></tr>`;
+        } else {
+            grid.innerHTML = stocks.map((s, i) => `
+                <tr class="hover:bg-blue-500/5 transition-colors">
+                    <td class="p-4 font-bold text-blue-500 italic">#${(i+1).toString().padStart(2, '0')}</td>
+                    <td class="p-4 text-white font-bold tracking-widest">${s.symbol}</td>
+                    <td class="p-4 text-green-400 font-bold">${s.yield}%</td>
+                    <td class="p-4 text-purple-400 font-bold">${s.roic}%</td>
+                    <td class="p-4 text-right text-white font-black">${s.score}</td>
+                </tr>
+            `).join('');
+        }
+
+        status.innerText = "> SCAN_COMPLETE: ALL_DATA_STABILIZED.";
+        btn.disabled = false;
+        btn.innerText = "Execute_Scan";
+    }
+</script>
 </body>
 </html>

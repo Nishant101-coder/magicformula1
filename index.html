@@ -2,33 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUANT_NODE // MAGIC_FORMULA_v2.6</title>
+    <title>QUANT_NODE // STABLE_BUILD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;800&display=swap');
         body { background: #010409; color: #8b949e; font-family: 'JetBrains Mono', monospace; }
         .terminal-panel { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; }
-        tr:hover { background: rgba(56, 139, 253, 0.03); }
-        .loading-bar { height: 2px; background: #388bfd; transition: width 0.3s ease; }
+        .loading-bar { height: 2px; background: #238636; transition: width 0.5s ease; }
+        .error-glow { color: #f85149; text-shadow: 0 0 5px rgba(248, 81, 73, 0.2); }
     </style>
 </head>
 <body class="p-4 md:p-10">
 
     <div class="max-w-5xl mx-auto">
-        <header class="flex justify-between items-center mb-8">
+        <header class="flex justify-between items-center mb-8 border-b border-gray-800 pb-6">
             <div>
                 <h1 class="text-white text-xl font-bold tracking-tighter uppercase">Magic_Formula_Terminal</h1>
-                <p class="text-[9px] text-slate-500 mt-1 uppercase tracking-widest">Auth_Status: <span class="text-green-500 font-bold">KEY_ENCRYPTED_LOADED</span></p>
+                <p class="text-[9px] text-slate-500 mt-1 uppercase tracking-widest">Protocol: <span class="text-green-500">GENTLE_HANDSHAKE_v2.7</span></p>
             </div>
-            
-            <button onclick="runQuant()" id="btn" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded text-[10px] font-black transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-blue-500/20">
-                Execute_Scan
-            </button>
+            <button onclick="runQuant()" id="btn" class="bg-white hover:bg-blue-500 hover:text-white text-black px-8 py-3 rounded text-[10px] font-black transition-all uppercase tracking-widest active:scale-95">Execute_Scan</button>
         </header>
 
-        <div id="status-bar" class="text-[9px] mb-4 text-slate-500">
-            > SYSTEM_IDLE: STANDBY_FOR_COMMAND
+        <div id="status-bar" class="text-[9px] mb-4 text-slate-400 font-bold italic">
+            > SYSTEM_READY: AWAITING_COMMAND
         </div>
 
         <div class="w-full bg-[#161b22] h-[1px] mb-8">
@@ -39,7 +35,7 @@
             <table class="w-full text-left text-[11px]">
                 <thead class="bg-[#161b22] text-slate-400 border-b border-[#30363d] uppercase font-bold">
                     <tr>
-                        <th class="p-4 text-blue-500 italic">Rank</th>
+                        <th class="p-4">Rank</th>
                         <th class="p-4">Ticker</th>
                         <th class="p-4">Earnings Yield (%)</th>
                         <th class="p-4">ROIC (%)</th>
@@ -47,17 +43,16 @@
                     </tr>
                 </thead>
                 <tbody id="results-grid" class="divide-y divide-[#30363d]">
-                    <tr><td colspan="5" class="p-24 text-center text-slate-600 italic uppercase tracking-tighter">Click Execute_Scan to start live data extraction.</td></tr>
+                    <tr><td colspan="5" class="p-24 text-center text-slate-600 italic uppercase">Click Execute_Scan to begin.</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
 <script>
-    // Security Note: Since this key is in a public GitHub repo, anyone can see it. 
-    // This is fine for testing, but standard practice is to keep it hidden!
     const API_KEY = "yRjKLFwT3t9TfSXqDPunx2maCHwjOfQh";
-    const TICKERS = ["AAPL", "MSFT", "GOOGL", "NVDA", "AMZN", "META", "TSLA", "AVGO", "COST", "ADBE", "ORCL", "NFLX"];
+    // Reduced to 6 companies for the first test to ensure we don't hit the limit
+    const TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META"];
 
     async function runQuant() {
         const btn = document.getElementById('btn');
@@ -73,13 +68,18 @@
 
         for (let i = 0; i < TICKERS.length; i++) {
             const symbol = TICKERS[i];
-            status.innerText = `> FETCHING_TELEMETRY: ${symbol} (${i + 1}/${TICKERS.length})`;
+            status.innerText = `> SECURE_FETCH: ${symbol} (${i + 1}/${TICKERS.length})...`;
             bar.style.width = `${((i + 1) / TICKERS.length) * 100}%`;
 
             try {
-                // Using FMP Key Metrics TTM endpoint for accurate Magic Formula data
                 const url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${API_KEY}`;
                 const response = await fetch(url);
+                
+                // If the API says "Too Many Requests" (429), we stop and tell the user
+                if (response.status === 429) {
+                    throw new Error("API_LIMIT_REACHED (429). Wait 60 seconds.");
+                }
+
                 const data = await response.json();
 
                 if (data && data[0]) {
@@ -90,25 +90,27 @@
                         rawYield: data[0].earningsYieldTTM,
                         rawRoic: data[0].roicTTM
                     });
+                    status.innerHTML = `<span class="text-green-500">> DATA_RECEIVED: ${symbol}</span>`;
                 }
             } catch (e) {
-                console.error(`Error on ${symbol}`);
+                status.innerHTML = `<span class="error-glow">> FAILED: ${symbol} | REASON: ${e.message}</span>`;
             }
-            // Small stagger to visualize the loading process
-            await new Promise(r => setTimeout(r, 150));
+            
+            // THE "GENTLE" PART: We wait 1.5 seconds between each call
+            await new Promise(r => setTimeout(r, 1500));
         }
 
-        // Magic Formula Ranking Engine
+        // Final Sort & Render
         stocks.sort((a, b) => b.rawYield - a.rawYield).forEach((s, i) => s.yRank = i + 1);
         stocks.sort((a, b) => b.rawRoic - a.rawRoic).forEach((s, i) => s.rRank = i + 1);
         stocks.forEach(s => s.score = s.yRank + s.rRank);
         stocks.sort((a, b) => a.score - b.score);
 
         if (stocks.length === 0) {
-            grid.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-red-500 font-bold uppercase">Critical Error: Unable to authenticate with API. Check Key.</td></tr>`;
+            grid.innerHTML = `<tr><td colspan="5" class="p-20 text-center error-glow font-bold uppercase">Critical Data Block. Use F12 to check Network Console.</td></tr>`;
         } else {
             grid.innerHTML = stocks.map((s, i) => `
-                <tr class="hover:bg-blue-500/5 transition-colors">
+                <tr class="hover:bg-blue-500/5">
                     <td class="p-4 font-bold text-blue-500 italic">#${(i+1).toString().padStart(2, '0')}</td>
                     <td class="p-4 text-white font-bold tracking-widest">${s.symbol}</td>
                     <td class="p-4 text-green-400 font-bold">${s.yield}%</td>
@@ -118,7 +120,7 @@
             `).join('');
         }
 
-        status.innerText = "> SCAN_COMPLETE: ALL_DATA_STABILIZED.";
+        status.innerText = "> SCAN_COMPLETE.";
         btn.disabled = false;
         btn.innerText = "Execute_Scan";
     }

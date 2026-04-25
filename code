@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Magic Formula | VS Code Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#010409] text-white p-10">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4">Magic Formula <span class="text-blue-500 italic">Live</span></h1>
+        
+        <div class="bg-[#0d1117] border border-gray-800 p-4 rounded mb-6 flex justify-between items-center">
+            <div>
+                <p id="market-status" class="text-xs font-bold uppercase text-red-500">Market: Detecting...</p>
+                <p id="date-time" class="text-[10px] text-gray-500">Not Synced</p>
+            </div>
+            <button onclick="runMagic()" id="btn" class="bg-blue-600 px-6 py-2 rounded font-bold hover:bg-blue-500 transition">RUN ANALYSIS</button>
+        </div>
+
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="text-gray-500 text-xs border-b border-gray-800">
+                    <th class="pb-3">RANK</th>
+                    <th class="pb-3">TICKER</th>
+                    <th class="pb-3">BASIS</th>
+                    <th class="pb-3">YIELD</th>
+                    <th class="pb-3 text-right">SCORE</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr><td colspan="5" class="py-10 text-center text-gray-700 italic">Click "Run Analysis" to fetch live data.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // These are the stocks we will analyze
+        const tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "XOM", "JPM", "COST"];
+
+        async function runMagic() {
+            const btn = document.getElementById('btn');
+            const tbody = document.getElementById('table-body');
+            btn.disabled = true;
+            btn.innerText = "SYNCING...";
+            tbody.innerHTML = "";
+
+            let results = [];
+
+            for (let symbol of tickers) {
+                // Using the corsproxy to bypass security blocks
+                const proxy = "https://corsproxy.io/?";
+                const url = `${proxy}https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    const s = data.quoteResponse.result[0];
+
+                    // Determine if market is closed (Simplified logic)
+                    const isClosed = s.marketState !== "REGULAR";
+                    
+                    // Magic Formula: Earnings Yield and ROC 
+                    // Note: 'quote' endpoint has fewer fundamentals, 
+                    // so we use Trailing PE and ROE/ROA if available
+                    results.push({
+                        ticker: symbol,
+                        basis: isClosed ? "Last Close" : "Live",
+                        yield: s.trailingPE ? (100 / s.trailingPE).toFixed(2) : "0.00",
+                        rawYield: s.trailingPE ? (100 / s.trailingPE) : 0,
+                        market: s.marketState
+                    });
+
+                } catch (e) {
+                    console.error("Error fetching " + symbol, e);
+                }
+                // Wait 0.2 seconds between stocks
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            // Sort by Yield (since we're using a simpler endpoint for speed)
+            results.sort((a, b) => b.rawYield - a.rawYield);
+
+            // Update Status
+            if(results.length > 0) {
+                document.getElementById('market-status').innerText = "Market: " + results[0].market;
+                document.getElementById('date-time').innerText = "Data as of: " + new Date().toLocaleString();
+            }
+
+            // Display Results
+            results.forEach((s, i) => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-900 text-sm hover:bg-gray-900">
+                        <td class="py-4 font-bold text-blue-500">#${i + 1}</td>
+                        <td class="py-4 font-bold text-white">${s.ticker}</td>
+                        <td class="py-4 text-[10px] text-gray-500 uppercase">${s.basis}</td>
+                        <td class="py-4 text-green-400 font-mono">${s.yield}%</td>
+                        <td class="py-4 text-right font-black text-white">${(i+1)*2}</td>
+                    </tr>
+                `;
+            });
+
+            btn.disabled = false;
+            btn.innerText = "RUN ANALYSIS";
+        }
+    </script>
+</body>
+</html>

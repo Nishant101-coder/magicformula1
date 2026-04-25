@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>QUANT_NODE // STABLE_STREAM_v3.2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUANT_NODE // RAW_HTML_BYPASS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;800&display=swap');
         body { background: #010409; color: #c9d1d9; font-family: 'JetBrains Mono', monospace; }
-        .panel { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; }
-        .loading-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .panel { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .glitch { color: #f85149; text-shadow: 2px 0 blue, -2px 0 red; animation: glitch-anim 1s infinite linear alternate-reverse; }
+        @keyframes glitch-anim { 0% { clip-path: inset(20% 0 80% 0); } 100% { clip-path: inset(80% 0 20% 0); } }
     </style>
 </head>
 <body class="p-4 md:p-12">
@@ -17,116 +18,108 @@
     <div class="max-w-4xl mx-auto">
         <header class="flex justify-between items-end mb-8 border-b border-[#30363d] pb-6">
             <div>
-                <h1 class="text-white text-2xl font-bold tracking-tighter uppercase font-black italic">Terminal_<span class="text-blue-500">v3.2</span></h1>
-                <p class="text-[10px] text-slate-500 mt-1 tracking-widest font-bold uppercase">Source: <span class="text-green-500">TwelveData_Verified</span></p>
+                <h1 class="text-white text-2xl font-black italic tracking-tighter">TERMINAL_<span class="text-red-500 font-normal">ROGUE</span></h1>
+                <p class="text-[9px] text-slate-500 mt-1 uppercase tracking-widest">Protocol: <span class="text-yellow-500 font-bold">Public_Proxy_Loophole (Unstable)</span></p>
             </div>
-            <button onclick="startAnalysis()" id="runBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-3 rounded font-black text-xs transition-all active:scale-95 shadow-lg shadow-blue-500/20">
-                RUN_STABLE_SCAN
+            <button onclick="executeBypass()" id="runBtn" class="bg-red-900 hover:bg-red-700 text-white px-8 py-3 rounded font-black text-[10px] transition-all uppercase tracking-widest active:scale-95 border border-red-500 shadow-lg shadow-red-500/20">
+                Execute_Bypass
             </button>
         </header>
 
-        <div class="mb-6">
-            <div id="status" class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-2">> System Standby...</div>
-            <div class="w-full bg-[#161b22] h-1 rounded-full overflow-hidden">
-                <div id="progress" class="h-full bg-blue-500 transition-all duration-500 w-0"></div>
-            </div>
-        </div>
+        <div id="status-line" class="text-[10px] font-bold tracking-widest mb-4 text-slate-400 uppercase italic">> Warning: No API Keys detected. Relying on public proxy routing...</div>
 
-        <div class="panel overflow-hidden shadow-2xl">
+        <div class="panel overflow-hidden">
             <table class="w-full text-left text-[11px]">
                 <thead class="bg-[#161b22] text-slate-400 border-b border-[#30363d] uppercase font-bold">
                     <tr>
-                        <th class="p-4">Rank</th>
-                        <th class="p-4">Ticker</th>
-                        <th class="p-4">E_Yield (%)</th>
-                        <th class="p-4">ROIC (%)</th>
+                        <th class="p-4 text-red-500 italic">Rank</th>
+                        <th class="p-4">Symbol</th>
+                        <th class="p-4">Earnings Yield (%)</th>
+                        <th class="p-4">Price/Book</th>
                         <th class="p-4 text-right">Score</th>
                     </tr>
                 </thead>
                 <tbody id="grid" class="divide-y divide-[#30363d]">
-                    <tr><td colspan="5" class="p-20 text-center text-slate-600 italic uppercase">Click button to execute high-integrity scan.</td></tr>
+                    <tr><td colspan="5" class="p-20 text-center text-slate-600 italic uppercase tracking-tighter">System Ready. Click Execute_Bypass.</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
 <script>
-    const API_KEY = "4be8038df64e4e34abef0cda10e59327";
-    // We will scan 5 major stocks to ensure we stay well within the free tier limits
-    const TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"];
+    // Just the raw symbols. No keys. No backend.
+    const TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "META"];
 
-    async function startAnalysis() {
+    async function executeBypass() {
         const btn = document.getElementById('runBtn');
         const grid = document.getElementById('grid');
-        const status = document.getElementById('status');
-        const progress = document.getElementById('progress');
-        
+        const status = document.getElementById('status-line');
+
         btn.disabled = true;
-        btn.innerText = "SCANNING...";
+        btn.innerText = "HACKING_CORS...";
         grid.innerHTML = "";
         
-        let masterData = [];
+        let portfolio = [];
 
-        for (let i = 0; i < TICKERS.length; i++) {
-            const symbol = TICKERS[i];
-            const percent = ((i + 1) / TICKERS.length) * 100;
+        for (let symbol of TICKERS) {
+            status.innerHTML = `<span class="text-yellow-500">> ROUTING ${symbol} THROUGH PUBLIC PROXY...</span>`;
             
-            status.innerHTML = `<span class="loading-pulse">> HANDSHAKING WITH DATA NODE: ${symbol}...</span>`;
-            progress.style.width = `${percent}%`;
-
             try {
-                // Using the 'Statistics' endpoint only - it contains both valuation and profitability
-                const url = `https://api.twelvedata.com/statistics?symbol=${symbol}&apikey=${API_KEY}`;
-                const response = await fetch(url);
+                // The Loophole: We ask CodeTabs (a public proxy) to ask Yahoo for the data.
+                // We add a random number cache-buster to the end to prevent the proxy from sending old data.
+                const cacheBuster = Math.floor(Math.random() * 100000);
+                const targetUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}&cb=${cacheBuster}`;
+                const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
+                
+                const response = await fetch(proxyUrl);
+                
+                if (!response.ok) throw new Error("Proxy Rejected Connection");
+                
                 const data = await response.json();
+                const quote = data.quoteResponse.result[0];
 
-                if (data.status === "error") throw new Error(data.message);
+                if (quote) {
+                    // Extracting what we can from the raw Yahoo Quote
+                    const pe = quote.trailingPE || quote.forwardPE;
+                    const pb = quote.priceToBook || 0;
+                    const yieldVal = pe ? (100 / pe) : 0;
 
-                const stats = data.statistics;
-                const pe = parseFloat(stats.valuation_and_assets.forward_pe || stats.valuation_and_assets.trailing_pe);
-                const roic = parseFloat(stats.profitability.return_on_invested_capital || stats.profitability.return_on_assets);
-
-                const eYield = pe ? (100 / pe) : 0;
-
-                if (eYield > 0 && roic > 0) {
-                    masterData.push({ symbol, eYield, roic });
-                    status.innerHTML = `<span class="text-green-500 font-bold">> ${symbol} VERIFIED</span>`;
+                    if (yieldVal > 0) {
+                        portfolio.push({ symbol, yield: yieldVal, pb: pb });
+                        status.innerHTML = `<span class="text-green-500">> ${symbol} PAYLOAD SECURED</span>`;
+                    }
                 }
-
             } catch (err) {
-                status.innerHTML = `<span class="text-red-500 font-bold">> ${symbol} BLOCKED: ${err.message}</span>`;
-                console.error(err);
+                status.innerHTML = `<span class="glitch">> ${symbol} BLOCKED: PROXY INTERCEPTED</span>`;
             }
 
-            // High-security delay: 12 seconds to prevent IP-based throttling
-            if (i < TICKERS.length - 1) {
-                await new Promise(r => setTimeout(r, 12000));
-            }
+            // You MUST wait at least 3 seconds between requests or the public proxy will ban your IP.
+            await new Promise(r => setTimeout(r, 3000));
         }
 
-        // Quant Ranking Engine
-        masterData.sort((a, b) => b.eYield - a.eYield).forEach((s, i) => s.yRank = i + 1);
-        masterData.sort((a, b) => b.roic - a.roic).forEach((s, i) => s.rRank = i + 1);
-        masterData.forEach(s => s.score = s.yRank + s.rRank);
-        masterData.sort((a, b) => a.score - b.score);
+        // Ranking Engine (Yield High->Low, Price/Book Low->High)
+        portfolio.sort((a, b) => b.yield - a.yield).forEach((s, i) => s.yRank = i + 1);
+        portfolio.sort((a, b) => a.pb - b.pb).forEach((s, i) => s.pbRank = i + 1);
+        portfolio.forEach(s => s.score = s.yRank + s.pbRank);
+        portfolio.sort((a, b) => a.score - b.score);
 
-        if (masterData.length === 0) {
-            grid.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-red-500 font-bold uppercase">No data received. API limit likely exceeded for this hour.</td></tr>`;
+        if (portfolio.length === 0) {
+            grid.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-red-500 font-bold uppercase tracking-widest glitch">CONNECTION SEVERED. PUBLIC PROXY IS DOWN.</td></tr>`;
         } else {
-            grid.innerHTML = masterData.map((s, i) => `
-                <tr class="hover:bg-blue-500/5 transition-all">
-                    <td class="p-4 font-bold text-blue-500 italic">#${(i+1).toString().padStart(2, '0')}</td>
+            grid.innerHTML = portfolio.map((s, i) => `
+                <tr class="hover:bg-[#161b22] transition-all">
+                    <td class="p-4 font-bold text-red-500 italic">#${(i+1).toString().padStart(2, '0')}</td>
                     <td class="p-4 text-white font-bold tracking-widest">${s.symbol}</td>
-                    <td class="p-4 text-green-400 font-bold">${s.eYield.toFixed(2)}%</td>
-                    <td class="p-4 text-purple-400 font-bold">${s.roic.toFixed(2)}%</td>
+                    <td class="p-4 text-green-400 font-bold">${s.yield.toFixed(2)}%</td>
+                    <td class="p-4 text-purple-400 font-bold">${s.pb.toFixed(2)}</td>
                     <td class="p-4 text-right text-white font-black">${s.score}</td>
                 </tr>
             `).join('');
         }
 
         btn.disabled = false;
-        btn.innerText = "RUN_STABLE_SCAN";
-        status.innerText = "> SCAN COMPLETED SUCCESSFULLY.";
+        btn.innerText = "Execute_Bypass";
+        status.innerText = "> PROXY CONNECTION CLOSED.";
     }
 </script>
 </body>
